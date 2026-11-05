@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>11月5日 · 私人记忆</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background-color: #030303;
+    font-family: "Songti SC", "Times New Roman", serif;
+    color: #d4af37;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* 3D 视差容器 */
+  .parallax-layer {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: transform 0.1s ease-out;
+    will-change: transform;
+  }
+
+  /* 星空粒子 Canvas */
+  #particle-canvas {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  }
+
+  /* 启动层 */
+  #start-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: #030303;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: opacity 1.5s ease, visibility 1.5s ease;
+  }
+  #start-screen.hide { opacity: 0; visibility: hidden; }
+
+  .gold-line {
+    width: 1px; height: 80px;
+    background: linear-gradient(to bottom, transparent, #d4af37, transparent);
+    margin-bottom: 30px;
+    animation: pulse 2s infinite alternate;
+  }
+  .start-text {
+    font-size: 12px; letter-spacing: 10px;
+    color: #d4af37; opacity: 0.6;
+    font-family: -apple-system, sans-serif;
+    animation: pulse 2s infinite alternate;
+  }
+  @keyframes pulse {
+    from { opacity: 0.3; }
+    to { opacity: 1; }
+  }
+
+  /* 主内容 */
+  .main-content {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    opacity: 0; transform: scale(0.95); transition: all 2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .main-content.show { opacity: 1; transform: scale(1); }
+
+  /* 播放器圆环 */
+  .music-ring {
+    position: relative;
+    width: 200px; height: 200px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 50px;
+    cursor: pointer;
+  }
+  .ring-outer, .ring-inner {
+    position: absolute; border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    animation: ripple 4s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+  }
+  .ring-outer { width: 100%; height: 100%; }
+  .ring-inner { width: 70%; height: 70%; animation-delay: 2s; border-color: rgba(212, 175, 55, 0.4); }
+  
+  @keyframes ripple {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  /* 中心碟片 */
+  .disc {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 175, 55, 0.8);
+    background: radial-gradient(circle, rgba(212,175,55,0.15) 0%, rgba(0,0,0,0.8) 80%);
+    box-shadow: 0 0 40px rgba(212, 175, 55, 0.2), inset 0 0 20px rgba(212, 175, 55, 0.2);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.5s ease;
+  }
+  /* 碟片旋转 */
+  .music-ring.playing .disc {
+    animation: spin 8s linear infinite;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  /* 播放暂停图标 */
+  .icon-triangle {
+    width: 0; height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 18px solid #d4af37;
+    margin-left: 6px; opacity: 1; transition: opacity 0.3s;
+  }
+  .music-ring.playing .icon-triangle { opacity: 0; }
+
+  .icon-pause {
+    display: none; gap: 6px;
+    transition: opacity 0.3s;
+  }
+  .icon-pause div { width: 4px; height: 20px; background: #d4af37; border-radius: 2px; }
+  .music-ring.playing .icon-pause { display: flex; }
+
+  /* 文字信息 */
+  .title {
+    font-size: 26px; letter-spacing: 8px;
+    color: #e5c158; margin-bottom: 16px; font-weight: 300;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+  }
+  .subtitle {
+    font-size: 12px; letter-spacing: 5px;
+    color: #8c7343; font-family: -apple-system, sans-serif;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .subtitle::before, .subtitle::after {
+    content: ""; display: block; width: 20px; height: 1px;
+    background: rgba(212, 175, 55, 0.4);
+  }
+
+  /* 歌词/文字动效 */
+  .lyrics-container {
+    margin-top: 60px;
+    height: 24px; overflow: hidden;
+    position: relative; width: 80%;
+  }
+  .lyrics-text {
+    font-size: 14px; color: #a68a46; letter-spacing: 2px;
+    font-family: "Songti SC", serif;
+    opacity: 0; transform: translateY(10px);
+    transition: all 1.5s ease;
+    position: absolute; width: 100%; text-align: center;
+  }
+  .lyrics-text.show { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+  <!-- 启动遮罩 -->
+  <div id="start-screen">
+    <div class="gold-line"></div>
+    <div class="start-text">TOUCH TO ENTER</div>
+  </div>
+
+  <!-- 粒子背景 -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- 视差主内容 -->
+  <div class="parallax-layer" id="parallax-layer">
+    <div class="main-content" id="main-content">
+      
+      <div class="music-ring" id="music-ring">
+        <div class="ring-outer"></div>
+        <div class="ring-inner"></div>
+        <div class="disc">
+          <div class="icon-triangle"></div>
+          <div class="icon-pause"><div></div><div></div></div>
+        </div>
+      </div>
+
+      <div class="title">私人记忆</div>
+      <div class="subtitle">11月5日 · 10:15 AM</div>
+
+      <div class="lyrics-container">
+        <div class="lyrics-text" id="lyrics-text">- 声音是记忆的锚点 -</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 音频文件 (循环播放) -->
+  <audio id="bg-audio" src="11月5日 上午10点15分.m4a" loop></audio>
+
+<script>
+  /* ==========================================
+     1. 背景黑金粒子系统 (Canvas 绘制)
+     ========================================== */
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let particles = [];
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  class Particle {
+    constructor() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.size = Math.random() * 2 + 0.5;
+      this.speedX = Math.random() * 0.5 - 0.25;
+      this.speedY = Math.random() * -0.5 - 0.1; // 向上飘
+      this.opacity = Math.random() * 0.5 + 0.1;
+      this.fade = Math.random() * 0.02 - 0.01;
+    }
+    update() {
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.opacity += this.fade;
+      
+      // 边界重置
+      if (this.y < 0) { this.y = height; this.x = Math.random() * width; }
+      if (this.opacity > 0.8 || this.opacity < 0.1) this.fade *= -1;
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      // 香槟金颜色
+      ctx.fillStyle = `rgba(212, 175, 55, ${this.opacity})`;
+      ctx.fill();
+    }
+  }
+
+  for (let i = 0; i < 80; i++) {
+    particles.push(new Particle());
+  }
+
+  function animateParticles() {
+    ctx.clearRect(0, 0, width, height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  /* ==========================================
+     2. 音乐播放控制 & 自动播放限制破解
+     ========================================== */
+  const startScreen = document.getElementById('start-screen');
+  const mainContent = document.getElementById('main-content');
+  const audio = document.getElementById('bg-audio');
+  const musicRing = document.getElementById('music-ring');
+  const lyricsText = document.getElementById('lyrics-text');
+
+  let isPlaying = false;
+  let lyricsInterval;
+
+  const lyrics = [
+    "有些瞬间，只属于那个时刻。",
+    "声音响起，仿佛回到了那一天。",
+    "不想忘记的，都在这里了。",
+    "聆听，那段被封存的记忆。"
+  ];
+  let lyricIndex = 0;
+
+  startScreen.addEventListener('click', () => {
+    // 1. 隐藏启动层
+    startScreen.classList.add('hide');
+    
+    // 2. 显示主内容
+    setTimeout(() => {
+      mainContent.classList.add('show');
+      // 3. 播放音频
+      playAudio();
+      // 4. 启动歌词轮播
+      startLyrics();
+    }, 300);
+  });
+
+  function playAudio() {
+    audio.play().then(() => {
+      isPlaying = true;
+      musicRing.classList.add('playing');
+    }).catch(err => {
+      console.error("播放失败:", err);
+      alert("音频加载失败，请确保文件 [11月5日 上午10点15分.m4a] 与网页在同一文件夹。");
+    });
+  }
+
+  // 点击圆环暂停/播放
+  musicRing.addEventListener('click', (e) => {
+    e.stopPropagation(); // 防止触发屏幕滑动
+    if (isPlaying) {
+      audio.pause();
+      isPlaying = false;
+      musicRing.classList.remove('playing');
+      clearInterval(lyricsInterval);
+      lyricsText.classList.remove('show');
+    } else {
+      playAudio();
+      startLyrics();
+    }
+  });
+
+  function startLyrics() {
+    clearInterval(lyricsInterval);
+    lyricsText.classList.add('show');
+    lyricsInterval = setInterval(() => {
+      lyricsText.classList.remove('show');
+      setTimeout(() => {
+        lyricIndex = (lyricIndex + 1) % lyrics.length;
+        lyricsText.innerText = lyrics[lyricIndex];
+        lyricsText.classList.add('show');
+      }, 800); // 文字消失后 0.8 秒出现新文字
+    }, 5000); // 每 5 秒切换一句
+  }
+
+  /* ==========================================
+     3. 3D 触屏/鼠标视差跟随效果
+     ========================================== */
+  const parallaxLayer = document.getElementById('parallax-layer');
+  
+  window.addEventListener('mousemove', (e) => {
+    const x = (window.innerWidth / 2 - e.clientX) / 40;
+    const y = (window.innerHeight / 2 - e.clientY) / 40;
+    parallaxLayer.style.transform = `translate(${x}px, ${y}px)`;
+  });
+
+  window.addEventListener('touchmove', (e) => {
+    const touch = e.touches[0];
+    const x = (window.innerWidth / 2 - touch.clientX) / 40;
+    const y = (window.innerHeight / 2 - touch.clientY) / 40;
+    parallaxLayer.style.transform = `translate(${x}px, ${y}px)`;
+  });
+
+  // 松开恢复原位
+  window.addEventListener('touchend', () => {
+    parallaxLayer.style.transform = `translate(0px, 0px)`;
+  });
+  window.addEventListener('mouseleave', () => {
+    parallaxLayer.style.transform = `translate(0px, 0px)`;
+  });
+
+</script>
+</body>
+</html>
